@@ -3,19 +3,25 @@
 import { useState } from "react"
 import Link from "next/link"
 import { Printer, Eye, EyeOff } from "lucide-react"
+import { useAuth } from "@/lib/auth-context"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
+  const [activeTab, setActiveTab] = useState<"customer" | "shopkeeper">("customer")
   const [formData, setFormData] = useState({
     email: "",
     password: "",
     rememberMe: false,
   })
+
+  const { customerLogin, shopkeeperLogin, isLoading, error } = useAuth()
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target
@@ -25,12 +31,14 @@ export default function LoginPage() {
     })
   }
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
-    // Here you would typically authenticate the user
-    console.log("Login submitted:", formData)
-    // Redirect to dashboard (this would normally happen after authentication)
-    window.location.href = "/dashboard/customer"
+
+    if (activeTab === "customer") {
+      await customerLogin(formData.email, formData.password)
+    } else {
+      await shopkeeperLogin(formData.email, formData.password)
+    }
   }
 
   return (
@@ -60,6 +68,23 @@ export default function LoginPage() {
             <h1 className="text-2xl font-bold tracking-tight">Log in to your account</h1>
             <p className="text-muted-foreground">Enter your email and password to access your account</p>
           </div>
+
+          <Tabs
+            value={activeTab}
+            onValueChange={(value) => setActiveTab(value as "customer" | "shopkeeper")}
+            className="mb-6"
+          >
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="customer">Customer</TabsTrigger>
+              <TabsTrigger value="shopkeeper">Shopkeeper</TabsTrigger>
+            </TabsList>
+          </Tabs>
+
+          {error && (
+            <Alert variant="destructive" className="mb-4">
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
 
           {/* Social Login */}
           <div className="mb-8 space-y-4">
@@ -162,7 +187,7 @@ export default function LoginPage() {
                 id="rememberMe"
                 name="rememberMe"
                 checked={formData.rememberMe}
-                onCheckedChange={(checked) => setFormData({ ...formData, rememberMe: checked })}
+                onCheckedChange={(checked) => setFormData({ ...formData, rememberMe: checked as boolean })}
               />
               <label
                 htmlFor="rememberMe"
@@ -173,15 +198,15 @@ export default function LoginPage() {
             </div>
 
             <div className="pt-2">
-              <Button type="submit" className="w-full">
-                Log in
+              <Button type="submit" className="w-full" disabled={isLoading}>
+                {isLoading ? "Logging in..." : "Log in"}
               </Button>
             </div>
           </form>
 
           <div className="mt-6 text-center text-sm">
             Don&apos;t have an account?{" "}
-            <Link href="/signup" className="text-primary font-medium hover:underline">
+            <Link href={`/signup?role=${activeTab}`} className="text-primary font-medium hover:underline">
               Sign up
             </Link>
           </div>
