@@ -5,6 +5,7 @@ import Link from "next/link"
 import Image from "next/image"
 import { useSearchParams } from "next/navigation"
 import { Printer, Upload, ChevronLeft, ChevronRight, Clock } from "lucide-react"
+import { useAuth } from "@/lib/auth-context"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -12,6 +13,7 @@ import { Label } from "@/components/ui/label"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Textarea } from "@/components/ui/textarea"
 import { Checkbox } from "@/components/ui/checkbox"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 
 export default function SignupPage() {
   const searchParams = useSearchParams()
@@ -24,9 +26,7 @@ export default function SignupPage() {
     lastName: "",
     email: "",
     password: "",
-    // Customer fields
-    profilePicture: null,
-    phoneNumber: "",
+    
     // Shopkeeper fields
     shopName: "",
     shopAddress: "",
@@ -38,6 +38,8 @@ export default function SignupPage() {
     shopDescription: "",
     termsAccepted: false,
   })
+
+  const { customerSignup, shopkeeperSignup, isLoading, error } = useAuth()
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target
@@ -55,12 +57,28 @@ export default function SignupPage() {
     setStep(1)
   }
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
-    // Here you would typically send the data to your backend
-    console.log("Form submitted:", formData)
-    // Redirect to dashboard based on role
-    window.location.href = role === "customer" ? "/dashboard/customer" : "/dashboard/shopkeeper"
+    // console.log(role);
+    const name = `${formData.firstName} ${formData.lastName}`
+    await customerSignup(name, formData.email, formData.password)
+    if (role === "customer") {
+      
+    } else {
+      // For shopkeeper
+      const name = `${formData.firstName} ${formData.lastName}`
+      const location = [0, 0] // Default location, should be replaced with actual coordinates
+
+      await shopkeeperSignup({
+        name,
+        email: formData.email,
+        password: formData.password,
+        shopName: formData.shopName,
+        address: `${formData.shopAddress}, ${formData.shopCity}, ${formData.shopState} ${formData.shopZip}`,
+        services: formData.shopDescription ? [formData.shopDescription] : undefined,
+        location,
+      })
+    }
   }
 
   return (
@@ -116,6 +134,12 @@ export default function SignupPage() {
               <span>{role === "customer" ? "Customer Details" : "Shop Details"}</span>
             </div>
           </div>
+
+          {error && (
+            <Alert variant="destructive" className="mb-4">
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
 
           {/* Social Login */}
           <div className="mb-8 space-y-4">
@@ -257,7 +281,7 @@ export default function SignupPage() {
                 {role === "customer" ? (
                   /* Customer Fields */
                   <>
-                    <div className="space-y-2">
+                    {/* <div className="space-y-2">
                       <Label htmlFor="profilePicture">Profile Picture (Optional)</Label>
                       <div className="flex items-center gap-4">
                         <div className="relative h-16 w-16 overflow-hidden rounded-full bg-muted">
@@ -272,9 +296,9 @@ export default function SignupPage() {
                           Upload
                         </Button>
                       </div>
-                    </div>
+                    </div> */}
 
-                    <div className="space-y-2">
+                    {/* <div className="space-y-2">
                       <Label htmlFor="phoneNumber">Phone Number (Optional)</Label>
                       <Input
                         id="phoneNumber"
@@ -284,7 +308,7 @@ export default function SignupPage() {
                         value={formData.phoneNumber}
                         onChange={handleInputChange}
                       />
-                    </div>
+                    </div> */}
                   </>
                 ) : (
                   /* Shopkeeper Fields */
@@ -397,7 +421,7 @@ export default function SignupPage() {
                     id="termsAccepted"
                     name="termsAccepted"
                     checked={formData.termsAccepted}
-                    onCheckedChange={(checked) => setFormData({ ...formData, termsAccepted: checked })}
+                    onCheckedChange={(checked) => setFormData({ ...formData, termsAccepted: checked as boolean })}
                     required
                   />
                   <div className="grid gap-1.5 leading-none">
@@ -421,8 +445,8 @@ export default function SignupPage() {
                   </div>
                 </div>
 
-                <Button type="submit" className="w-full" disabled={!formData.termsAccepted}>
-                  Create Account
+                <Button type="submit" className="w-full" disabled={!formData.termsAccepted || isLoading}>
+                  {isLoading ? "Creating Account..." : "Create Account"}
                 </Button>
               </div>
             )}
