@@ -160,6 +160,16 @@ export const printRequestApi = {
       throw error
     }
   },
+
+  getSharedDocuments: async (requestId: string) => {
+    try{
+      const response = await axios.get(`${API_BASE_URL}/share/${requestId}`);
+      return response.data;
+    } catch (error) {
+      console.log("error in shared documents", error);
+      throw error;
+    }
+  },
 }
 
 // Shop APIs
