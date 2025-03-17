@@ -214,3 +214,10 @@ export function useAuth() {
   return context
 }
 
+export function usePrintRequest() {
+  const context = useContext();
+  if (context === undefined) {
+    throw new Error("usePrintRequest must be used within an printRequestProvider");
+  }
+  return context
+}
